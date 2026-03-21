@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Dashboard</title>
+
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:system-ui;
+}
+
+body{
+background:#0f172a;
+color:white;
+display:flex;
+height:100vh;
+}
+
+/* SIDEBAR */
+
+.sidebar{
+width:230px;
+background:#020617;
+padding:25px;
+display:flex;
+flex-direction:column;
+gap:20px;
+}
+
+.logo{
+font-size:20px;
+font-weight:bold;
+color:#6366f1;
+margin-bottom:20px;
+}
+
+.menu a{
+display:flex;
+align-items:center;
+gap:10px;
+text-decoration:none;
+color:#cbd5f1;
+padding:10px;
+border-radius:10px;
+transition:.2s;
+}
+
+.menu a:hover{
+background:#1e293b;
+color:white;
+}
+
+/* MAIN */
+
+.main{
+flex:1;
+display:flex;
+flex-direction:column;
+}
+
+/* NAVBAR */
+
+.navbar{
+height:70px;
+background:#020617;
+display:flex;
+align-items:center;
+justify-content:space-between;
+padding:0 25px;
+border-bottom:1px solid #1e293b;
+}
+
+.nav-right{
+display:flex;
+align-items:center;
+gap:20px;
+}
+
+.avatar{
+width:35px;
+height:35px;
+border-radius:50%;
+background:#6366f1;
+display:flex;
+align-items:center;
+justify-content:center;
+cursor:pointer;
+}
+
+/* DASHBOARD GRID */
+
+.content{
+padding:25px;
+display:grid;
+grid-template-columns:3fr 1fr;
+gap:20px;
+overflow:auto;
+}
+
+/* LEFT SIDE */
+
+.left{
+display:flex;
+flex-direction:column;
+gap:20px;
+}
+
+/* STATS */
+
+.stats{
+display:grid;
+grid-template-columns:repeat(4,1fr);
+gap:15px;
+}
+
+.card{
+background:#1e293b;
+padding:18px;
+border-radius:12px;
+box-shadow:0 0 10px rgba(0,0,0,0.3);
+transition:.2s;
+}
+
+.card:hover{
+transform:translateY(-3px);
+}
+
+.card h3{
+font-size:14px;
+color:#94a3b8;
+}
+
+.card p{
+font-size:22px;
+margin-top:6px;
+}
+
+/* COURSES */
+
+.section-title{
+margin-bottom:10px;
+font-size:18px;
+}
+
+.courses{
+display:grid;
+grid-template-columns:repeat(3,1fr);
+gap:15px;
+}
+
+.course{
+background:#1e293b;
+padding:15px;
+border-radius:12px;
+}
+
+.course img{
+width:100%;
+border-radius:10px;
+margin-bottom:10px;
+}
+
+.progress{
+background:#334155;
+height:8px;
+border-radius:10px;
+overflow:hidden;
+margin:8px 0;
+}
+
+.progress span{
+display:block;
+height:100%;
+background:#6366f1;
+}
+
+button{
+background:#6366f1;
+border:none;
+padding:8px 14px;
+border-radius:8px;
+color:white;
+cursor:pointer;
+}
+
+/* ACTIVITY */
+
+.activity li{
+list-style:none;
+padding:8px 0;
+border-bottom:1px solid #334155;
+font-size:14px;
+}
+
+/* RIGHT PANEL */
+
+.right{
+display:flex;
+flex-direction:column;
+gap:20px;
+}
+
+.widget{
+background:#1e293b;
+padding:15px;
+border-radius:12px;
+}
+
+.note{
+width:100%;
+background:#020617;
+border:none;
+padding:10px;
+border-radius:8px;
+color:white;
+margin-top:10px;
+}
+
+/* MOBILE */
+
+@media(max-width:1100px){
+
+.content{
+grid-template-columns:1fr;
+}
+
+.courses{
+grid-template-columns:1fr 1fr;
+}
+
+.stats{
+grid-template-columns:1fr 1fr;
+}
+
+.sidebar{
+display:none;
+}
+
+}
+
+</style>
+</head>
+
+
+<body>
+
+<!-- SIDEBAR -->
+
+<div class="sidebar">
+
+<div class="logo">MyAcademy</div>
+
+<div class="menu">
+
+<a href="#"><i class="fa fa-home"></i> Dashboard</a>
+<a href="#"><i class="fa fa-book"></i> My Courses</a>
+<a href="#"><i class="fa fa-play"></i> Continue Learning</a>
+<a href="#"><i class="fa fa-tasks"></i> Assignments</a>
+<a href="#"><i class="fa fa-certificate"></i> Certificates</a>
+<a href="#"><i class="fa fa-user"></i> Profile</a>
+<a href="#"><i class="fa fa-cog"></i> Settings</a>
+
+</div>
+
+</div>
+
+
+<!-- MAIN -->
+
+<div class="main">
+
+<div class="navbar">
+
+<div>Welcome back, <b id="studentName">Student</b> 👋</div>
+
+<div class="nav-right">
+<i class="fa fa-bell"></i>
+<div class="avatar" onclick="toggleMenu()">S</div>
+</div>
+
+</div>
+
+
+<div class="content">
+
+<!-- LEFT -->
+
+<div class="left">
+
+<!-- STATS -->
+
+<div class="stats">
+
+<div class="card">
+<h3>Total Courses</h3>
+<p>6</p>
+</div>
+
+<div class="card">
+<h3>Completed</h3>
+<p>2</p>
+</div>
+
+<div class="card">
+<h3>Certificates</h3>
+<p>1</p>
+</div>
+
+<div class="card">
+<h3>Progress</h3>
+<p>45%</p>
+</div>
+
+</div>
+
+
+<!-- CONTINUE LEARNING -->
+
+<div>
+
+<div class="section-title">Continue Learning</div>
+
+<div class="courses">
+
+<div class="course">
+<img src="https://picsum.photos/300/160">
+<h4>Web Development</h4>
+<div class="progress"><span style="width:70%"></span></div>
+<button>Continue</button>
+</div>
+
+<div class="course">
+<img src="https://picsum.photos/301/160">
+<h4>Python Basics</h4>
+<div class="progress"><span style="width:40%"></span></div>
+<button>Continue</button>
+</div>
+
+<div class="course">
+<img src="https://picsum.photos/302/160">
+<h4>UI UX Design</h4>
+<div class="progress"><span style="width:20%"></span></div>
+<button>Continue</button>
+</div>
+
+</div>
+
+</div>
+
+
+<!-- ACTIVITY -->
+
+<div class="card">
+
+<div class="section-title">Recent Activity</div>
+
+<ul class="activity">
+<li>Watched lesson: Flexbox Basics</li>
+<li>Completed quiz: HTML Fundamentals</li>
+<li>Started course: UI UX Design</li>
+<li>Submitted assignment: Landing Page</li>
+</ul>
+
+</div>
+
+
+<!-- ASSIGNMENTS -->
+
+<div class="card">
+
+<div class="section-title">Upcoming Assignments</div>
+
+<ul class="activity">
+<li>Portfolio Website – Due Tomorrow</li>
+<li>JavaScript Quiz – Due Friday</li>
+<li>UI Case Study – Due Next Week</li>
+</ul>
+
+</div>
+
+</div>
+
+
+<!-- RIGHT PANEL -->
+
+<div class="right">
+
+<div class="widget">
+<h3>🔥 Learning Streak</h3>
+<p style="margin-top:6px">5 Days in a row!</p>
+</div>
+
+<div class="widget">
+<h3>Quick Notes</h3>
+<textarea class="note" placeholder="Write something..."></textarea>
+</div>
+
+<div class="widget">
+<h3>Announcements</h3>
+<p style="margin-top:6px;font-size:14px">
+New course on AI launching next week 🚀
+</p>
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+function toggleMenu(){
+alert("Profile menu coming soon");
+}
+
+</script>
+
+</body>
+</html>
