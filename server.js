@@ -10,6 +10,10 @@ const courseRoutes = require("./routes/courseRoutes");
 const studentRoutes = require('./routes/studentRoutes');
 const adminRoutes = require("./routes/adminRoutes");
 const contactRoutes = require('./routes/contactRoutes');
+const courseContentRoutes = require('./routes/courseContentRoutes');
+const lessonRoutes = require('./routes/lessonRoutes');
+const accessRoutes = require('./routes/accessRoutes');
+const progressRoutes = require('./routes/progressRoutes');
 
 const app = express();
 
@@ -24,6 +28,10 @@ app.use("/api/courses", courseRoutes);
 app.use('/api/students', studentRoutes);
 app.use("/api/admin", adminRoutes);
 app.use('/api/contacts', contactRoutes);
+app.use('/api/courses', courseContentRoutes);
+app.use('/api/lessons', lessonRoutes);
+app.use('/api/access', accessRoutes);
+app.use('/api/progress', progressRoutes);
 
 // Root route
 app.get("/", (req, res) => {
