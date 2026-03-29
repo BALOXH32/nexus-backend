@@ -2,36 +2,29 @@ const supabase = require("../config/supabase");
 
 exports.getDashboardStats = async (req, res) => {
   try {
+    const [
+      { count: studentCount },
+      { count: courseCount },
+      { count: enrollmentCount },
+      { count: pendingCount },
+      { data: revenueData }
+    ] = await Promise.all([
+      supabase.from("students").select("*", { count: "exact", head: true }),
+      supabase.from("courses").select("*", { count: "exact", head: true }),
+      supabase.from("enrollments").select("*", { count: "exact", head: true }),
+      supabase.from("payment_requests").select("*", { count: "exact", head: true }).eq("status", "pending"),
+      supabase.from("enrollments").select("courses(price)")
+    ]);
 
-    const { count: studentCount } = await supabase
-      .from("students")
-      .select("*", { count: "exact", head: true });
-
-    const { count: courseCount } = await supabase
-      .from("courses")
-      .select("*", { count: "exact", head: true });
-
-    const { count: enrollmentCount } = await supabase
-      .from("enrollments")
-      .select("*", { count: "exact", head: true });
-
-    const { data: revenueData } = await supabase
-      .from("courses")
-      .select("price");
-
-    let revenue = 0;
-
-    if (revenueData) {
-      revenue = revenueData.reduce((sum, course) => sum + (course.price || 0), 0);
-    }
+    const revenue = (revenueData || []).reduce((sum, e) => sum + (e.courses?.price || 0), 0);
 
     res.json({
-      total_students: studentCount,
-      total_courses: courseCount,
-      total_enrollments: enrollmentCount,
-      total_revenue: revenue
+      total_students:    studentCount  || 0,
+      total_courses:     courseCount   || 0,
+      total_enrollments: enrollmentCount || 0,
+      pending_payments:  pendingCount  || 0,
+      total_revenue:     revenue
     });
-
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

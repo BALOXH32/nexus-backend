@@ -1,211 +1,153 @@
-const { createClient } = require('@supabase/supabase-js');
+const supabase = require("../config/supabase");
 
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
-
-// Upload payment request
-exports.uploadPayment = async (req, res) => {
+// ── SUBMIT PAYMENT WITH SCREENSHOT ──────────────────────────
+// Called from payment.html with multipart/form-data
+exports.submitPayment = async (req, res) => {
   try {
-    const { student_id, course_id, amount, payment_method, transaction_id, screenshot_url } = req.body;
-    
-    const { data, error } = await supabase
-      .from('payment_requests')
-      .insert({
-        student_id,
-        course_id,
-        amount,
-        payment_method,
-        transaction_id,
-        screenshot_url,
-        status: 'pending'
-      })
-      .select()
-      .single();
-    
-    if (error) throw error;
-    
-    // Create course access record (pending)
-    await supabase
-      .from('course_access')
-      .upsert({
-        student_id,
-        course_id,
-        status: 'pending',
-        payment_status: 'pending'
+    const {
+      student_id,
+      student_name,
+      student_email,
+      course_id,
+      course_title,
+      payment_method,
+      amount
+    } = req.body;
+
+    if (!student_id || !payment_method) {
+      return res.status(400).json({ error: "student_id and payment_method are required" });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: "Payment screenshot is required" });
+    }
+
+    // ── Upload screenshot to Supabase Storage ─────────────────
+    const fileExt   = req.file.originalname.split('.').pop();
+    const fileName  = `payment_${student_id}_${Date.now()}.${fileExt}`;
+    const filePath  = `payment-proofs/${fileName}`;
+
+    const { error: uploadError } = await supabase.storage
+      .from("payment-proofs")
+      .upload(filePath, req.file.buffer, {
+        contentType: req.file.mimetype,
+        upsert: false
       });
-    
+
+    if (uploadError) {
+      return res.status(500).json({ error: "Screenshot upload failed: " + uploadError.message });
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from("payment-proofs")
+      .getPublicUrl(filePath);
+
+    const screenshotUrl = urlData.publicUrl;
+
+    // ── Save to payment_requests table ────────────────────────
+    // Columns: student_id, course_id, amount, payment_method,
+    //          transaction_id, screenshot_url, status, admin_notes, reviewed_by
+    const prRow = {
+      student_id:     student_id,
+      amount:         parseInt(amount) || 999,
+      payment_method: payment_method,
+      screenshot_url: screenshotUrl,
+      status:         "pending"
+    };
+    if (course_id) prRow.course_id = course_id;
+
+    const { error: prError } = await supabase
+      .from("payment_requests")
+      .insert([prRow]);
+
+    if (prError) console.warn("payment_requests insert warn:", prError.message);
+
+    // ── Log to payments table ─────────────────────────────────
+    // Columns: student_name, email, course, method, screenshot, status, created_at
+    await supabase.from("payments").insert([{
+      student_name: student_name || "",
+      email:        student_email || "",
+      course:       course_title || "",
+      method:       payment_method,
+      screenshot:   screenshotUrl,
+      status:       "pending",
+      created_at:   new Date().toISOString()
+    }]);
+
+    // ── Update enrollment payment_status ──────────────────────
+    const updateRow = {
+      payment_status:    "under_review",
+      payment_screenshot: screenshotUrl,
+      payment_method:    payment_method
+    };
+    let enrollQuery = supabase.from("enrollments").update(updateRow).eq("student_id", student_id);
+    if (course_id) enrollQuery = enrollQuery.eq("course_id", course_id);
+    await enrollQuery;
+
     res.json({
-      success: true,
-      payment: data,
-      message: 'Payment submitted successfully. Waiting for admin approval.'
+      message: "Payment submitted successfully. Admin will verify within 24 hours.",
+      screenshot_url: screenshotUrl
     });
-    
-  } catch (error) {
-    console.error('Upload payment error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+
+  } catch (err) {
+    console.error("Payment submit error:", err);
+    res.status(500).json({ error: err.message });
   }
 };
 
-// Get pending payments (admin)
-exports.getPendingPayments = async (req, res) => {
+// ── GET ALL PAYMENTS (admin) ──────────────────────────────────
+exports.getAllPayments = async (req, res) => {
   try {
     const { data, error } = await supabase
-      .from('payment_requests')
-      .select(`
-        *,
-        students!payment_requests_student_id_fkey (
-          id,
-          name,
-          email
-        ),
-        courses!payment_requests_course_id_fkey (
-          id,
-          title
-        )
-      `)
-      .eq('status', 'pending')
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    res.json({
-      success: true,
-      payments: data || []
-    });
-    
-  } catch (error) {
-    console.error('Get pending payments error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+      .from("payment_requests")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) return res.status(500).json({ error: error.message });
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
 
-// Approve payment (admin)
+// ── APPROVE PAYMENT (admin) ───────────────────────────────────
 exports.approvePayment = async (req, res) => {
   try {
-    const { paymentId } = req.params;
-    const { admin_notes } = req.body;
-    
-    // Get payment details
-    const { data: payment } = await supabase
-      .from('payment_requests')
-      .select('*')
-      .eq('id', paymentId)
+    const { id } = req.params;
+    const { status, admin_notes } = req.body; // status: 'approved' or 'rejected'
+
+    // Update payment_request
+    const { data: pr, error: prErr } = await supabase
+      .from("payment_requests")
+      .update({ status, admin_notes, reviewed_by: "admin" })
+      .eq("id", id)
+      .select()
       .single();
-    
-    if (!payment) {
-      return res.status(404).json({
-        success: false,
-        error: 'Payment not found'
-      });
+
+    if (prErr) return res.status(500).json({ error: prErr.message });
+
+    // If approved, update enrollment to active
+    if (status === "approved" && pr.student_id) {
+      await supabase
+        .from("enrollments")
+        .update({
+          payment_status:    "approved",
+          enrollment_status: "active",
+          approved_at:       new Date().toISOString(),
+          approved_by:       "admin"
+        })
+        .eq("student_id", pr.student_id);
+
+      // Also update payments table
+      await supabase
+        .from("payments")
+        .update({ status: "approved" })
+        .eq("screenshot", pr.screenshot_url);
     }
-    
-    // Update payment request
-    const { error: updateError } = await supabase
-      .from('payment_requests')
-      .update({
-        status: 'approved',
-        admin_notes,
-        reviewed_at: new Date().toISOString()
-      })
-      .eq('id', paymentId);
-    
-    if (updateError) throw updateError;
-    
-    // Grant course access
-    const { error: accessError } = await supabase
-      .from('course_access')
-      .upsert({
-        student_id: payment.student_id,
-        course_id: payment.course_id,
-        status: 'active',
-        payment_status: 'approved',
-        granted_at: new Date().toISOString()
-      });
-    
-    if (accessError) throw accessError;
-    
-    res.json({
-      success: true,
-      message: 'Payment approved and access granted'
-    });
-    
-  } catch (error) {
-    console.error('Approve payment error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
 
-// Reject payment (admin)
-exports.rejectPayment = async (req, res) => {
-  try {
-    const { paymentId } = req.params;
-    const { admin_notes } = req.body;
-    
-    const { error } = await supabase
-      .from('payment_requests')
-      .update({
-        status: 'rejected',
-        admin_notes,
-        reviewed_at: new Date().toISOString()
-      })
-      .eq('id', paymentId);
-    
-    if (error) throw error;
-    
-    res.json({
-      success: true,
-      message: 'Payment rejected'
-    });
-    
-  } catch (error) {
-    console.error('Reject payment error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-};
-
-// Get student's payment history
-exports.getStudentPayments = async (req, res) => {
-  try {
-    const { studentId } = req.params;
-    
-    const { data, error } = await supabase
-      .from('payment_requests')
-      .select(`
-        *,
-        courses!payment_requests_course_id_fkey (
-          id,
-          title
-        )
-      `)
-      .eq('student_id', studentId)
-      .order('created_at', { ascending: false });
-    
-    if (error) throw error;
-    
-    res.json({
-      success: true,
-      payments: data || []
-    });
-    
-  } catch (error) {
-    console.error('Get student payments error:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    res.json({ message: `Payment ${status}`, data: pr });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 };
