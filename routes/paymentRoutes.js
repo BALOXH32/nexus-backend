@@ -1,6 +1,6 @@
 const express = require("express");
-const router  = express.Router();
-const multer  = require("multer");
+const router = express.Router();
+const multer = require("multer");
 const { submitPayment, getAllPayments, approvePayment } = require("../controllers/paymentController");
 
 // Store file in memory so we can upload to Supabase Storage
@@ -10,7 +10,7 @@ const upload = multer({
   fileFilter: (req, file, cb) => {
     const allowed = ["image/jpeg", "image/png", "image/webp", "application/pdf"];
     if (allowed.includes(file.mimetype)) cb(null, true);
-    else cb(new Error("Only JPG, PNG, WEBP and PDF files are allowed"));
+    else cb(new Error("Only JPG, PNG, WEBP, and PDF files are allowed"));
   }
 });
 
@@ -21,6 +21,6 @@ router.post("/submit", upload.single("screenshot"), submitPayment);
 router.get("/", getAllPayments);
 
 // Admin: approve or reject
-router.patch("/:id/approve", approvePayment);
+router.put("/:id/approve", approvePayment);
 
 module.exports = router;
