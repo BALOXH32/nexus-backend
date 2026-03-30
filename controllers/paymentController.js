@@ -35,8 +35,11 @@ exports.submitPayment = async (req, res) => {
       });
 
     if (uploadError) {
-      console.error("Storage upload error:", uploadError);
-      return res.status(500).json({ error: "Failed to upload screenshot" });
+      console.error("Storage upload error:", JSON.stringify(uploadError, null, 2));
+      return res.status(500).json({ 
+        error: "Failed to upload screenshot — Please try again or contact support.",
+        details: uploadError.message || uploadError.error || "Unknown storage error"
+      });
     }
 
     // Get public URL
