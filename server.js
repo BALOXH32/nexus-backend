@@ -9,8 +9,7 @@ const authRoutes        = require("./routes/authRoutes");
 const courseRoutes      = require("./routes/courseRoutes");
 const studentRoutes     = require('./routes/studentRoutes');
 const adminRoutes       = require("./routes/adminRoutes");
-const paymentRoutes     = require("./routes/paymentRoutes");
-
+const paymentRoutes = require('./routes/paymentRoutes');
 const app = express();
 
 // ── Middleware ───────────────────────────────────────────────
@@ -28,8 +27,7 @@ app.use("/api/auth",        authRoutes);
 app.use("/api/courses",     courseRoutes);
 app.use('/api/students',    studentRoutes);
 app.use("/api/admin",       adminRoutes);
-app.use("/api/payments",    paymentRoutes);
-
+app.use('/api/payments', paymentRoutes);
 // ── Root ─────────────────────────────────────────────────────
 app.get("/", (req, res) => {
   res.json({
