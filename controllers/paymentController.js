@@ -1,4 +1,4 @@
-const { supabase } = require("../config/supabase");
+const supabase = require("../config/supabase");
 
 // Submit payment proof
 exports.submitPayment = async (req, res) => {
@@ -141,7 +141,7 @@ exports.approvePayment = async (req, res) => {
           .eq("student_id", payment.student_id);
       }
     }
-
+ 
     res.json({ message: "Payment updated successfully" });
   } catch (error) {
     console.error("Approve payment error:", error);
