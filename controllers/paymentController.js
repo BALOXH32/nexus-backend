@@ -105,11 +105,25 @@ exports.getAllPayments = async (req, res) => {
   try {
     const { data, error } = await supabase
       .from("payment_requests")
-      .select("*")
+      .select(`
+        *,
+        students ( name, email, phone ),
+        courses  ( title )
+      `)
       .order("created_at", { ascending: false });
 
     if (error) throw error;
-    res.json(data || []);
+
+    // Flatten for easy frontend use
+    const payments = (data || []).map(p => ({
+      ...p,
+      student_name:  p.students?.name  || p.student_name  || "Unknown",
+      student_email: p.students?.email || p.student_email || "",
+      student_phone: p.students?.phone || "",
+      course_title:  p.courses?.title  || p.course_title  || p.course_id || "—"
+    }));
+
+    res.json(payments);
   } catch (error) {
     console.error("Get payments error:", error);
     res.status(500).json({ error: "Failed to fetch payments" });
