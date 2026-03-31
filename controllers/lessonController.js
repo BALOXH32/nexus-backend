@@ -1,28 +1,23 @@
-const { createClient } = require('@supabase/supabase-js');
-
-const supabase = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_KEY
-);
+const supabase = require("../config/supabase");
 
 // Get lesson details
 exports.getLesson = async (req, res) => {
   try {
     const { lessonId } = req.params;
-    
+
     const { data, error } = await supabase
       .from('lessons')
       .select('*')
       .eq('id', lessonId)
       .single();
-    
+
     if (error) throw error;
-    
+
     res.json({
       success: true,
       lesson: data
     });
-    
+
   } catch (error) {
     console.error('Get lesson error:', error);
     res.status(500).json({
@@ -37,7 +32,7 @@ exports.addLesson = async (req, res) => {
   try {
     const { moduleId } = req.params;
     const { title, description, video_url, duration, order_index, is_free } = req.body;
-    
+
     const { data, error } = await supabase
       .from('lessons')
       .insert({
@@ -51,14 +46,14 @@ exports.addLesson = async (req, res) => {
       })
       .select()
       .single();
-    
+
     if (error) throw error;
-    
+
     res.json({
       success: true,
       lesson: data
     });
-    
+
   } catch (error) {
     console.error('Add lesson error:', error);
     res.status(500).json({
@@ -73,7 +68,7 @@ exports.updateLesson = async (req, res) => {
   try {
     const { lessonId } = req.params;
     const { title, description, video_url, duration, order_index, is_free } = req.body;
-    
+
     const { data, error } = await supabase
       .from('lessons')
       .update({
@@ -87,14 +82,14 @@ exports.updateLesson = async (req, res) => {
       .eq('id', lessonId)
       .select()
       .single();
-    
+
     if (error) throw error;
-    
+
     res.json({
       success: true,
       lesson: data
     });
-    
+
   } catch (error) {
     console.error('Update lesson error:', error);
     res.status(500).json({
@@ -108,19 +103,19 @@ exports.updateLesson = async (req, res) => {
 exports.deleteLesson = async (req, res) => {
   try {
     const { lessonId } = req.params;
-    
+
     const { error } = await supabase
       .from('lessons')
       .delete()
       .eq('id', lessonId);
-    
+
     if (error) throw error;
-    
+
     res.json({
       success: true,
       message: 'Lesson deleted'
     });
-    
+
   } catch (error) {
     console.error('Delete lesson error:', error);
     res.status(500).json({

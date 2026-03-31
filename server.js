@@ -4,12 +4,18 @@ const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
 
-const enrollmentRoutes  = require('./routes/enrollmentRoutes');
-const authRoutes        = require("./routes/authRoutes");
-const courseRoutes      = require("./routes/courseRoutes");
-const studentRoutes     = require('./routes/studentRoutes');
-const adminRoutes       = require("./routes/adminRoutes");
+const enrollmentRoutes = require('./routes/enrollmentRoutes');
+const authRoutes = require("./routes/authRoutes");
+const courseRoutes = require("./routes/courseRoutes");
+const studentRoutes = require('./routes/studentRoutes');
+const adminRoutes = require("./routes/adminRoutes");
 const paymentRoutes = require('./routes/paymentRoutes');
+const courseContentRoutes = require('./routes/courseContentRoutes');
+const lessonRoutes = require('./routes/lessonRoutes');
+const accessRoutes = require('./routes/accessRoutes');
+const contactRoutes = require('./routes/contactRoutes');
+const progressRoutes = require('./routes/progressRoutes');
+
 const app = express();
 
 // ── Middleware ───────────────────────────────────────────────
@@ -23,11 +29,16 @@ app.use(express.urlencoded({ extended: true }));
 
 // ── Routes ───────────────────────────────────────────────────
 app.use('/api/enrollments', enrollmentRoutes);
-app.use("/api/auth",        authRoutes);
-app.use("/api/courses",     courseRoutes);
-app.use('/api/students',    studentRoutes);
-app.use("/api/admin",       adminRoutes);
+app.use("/api/auth", authRoutes);
+app.use("/api/courses", courseRoutes);
+app.use('/api/students', studentRoutes);
+app.use("/api/admin", adminRoutes);
 app.use('/api/payments', paymentRoutes);
+app.use('/api/course-content', courseContentRoutes);
+app.use('/api/lessons', lessonRoutes);
+app.use('/api/access', accessRoutes);
+app.use('/api/contacts', contactRoutes);
+app.use('/api/progress', progressRoutes);
 // ── Root ─────────────────────────────────────────────────────
 app.get("/", (req, res) => {
   res.json({
