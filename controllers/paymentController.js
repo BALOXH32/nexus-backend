@@ -152,6 +152,57 @@ exports.getAllPayments = async (req, res) => {
   }
 };
 
+// Get pending payments (admin)
+exports.getPendingPayments = async (req, res) => {
+  try {
+    let payments;
+    try {
+      const { data, error } = await supabase
+        .from("payment_requests")
+        .select(`
+          *,
+          students ( name, email, phone ),
+          courses  ( title )
+        `)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      payments = (data || []).map(p => ({
+        ...p,
+        student_name: p.students?.name || "Unknown",
+        student_email: p.students?.email || "",
+        student_phone: p.students?.phone || "",
+        course_title: p.courses?.title || p.course_id || "—"
+      }));
+    } catch (joinError) {
+      console.warn("FK join failed, falling back to plain query:", joinError.message);
+
+      const { data, error } = await supabase
+        .from("payment_requests")
+        .select("*")
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      payments = (data || []).map(p => ({
+        ...p,
+        student_name: p.student_name || "Unknown",
+        student_email: p.student_email || "",
+        student_phone: "",
+        course_title: p.course_title || p.course_id || "—"
+      }));
+    }
+
+    res.json(payments);
+  } catch (error) {
+    console.error("Get pending payments error:", error);
+    res.status(500).json({ error: "Failed to fetch pending payments" });
+  }
+};
+
 // Approve/reject payment (admin)
 exports.approvePayment = async (req, res) => {
   try {

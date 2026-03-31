@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const multer = require("multer");
-const { submitPayment, getAllPayments, approvePayment } = require("../controllers/paymentController");
+const { submitPayment, getAllPayments, getPendingPayments, approvePayment } = require("../controllers/paymentController");
 
 // Store file in memory so we can upload to Supabase Storage
 const upload = multer({
@@ -16,6 +16,9 @@ const upload = multer({
 
 // Student submits payment screenshot
 router.post("/submit", upload.single("screenshot"), submitPayment);
+
+// Admin: get pending payments (must be before /:id routes)
+router.get("/pending", getPendingPayments);
 
 // Admin: get all payments
 router.get("/", getAllPayments);
