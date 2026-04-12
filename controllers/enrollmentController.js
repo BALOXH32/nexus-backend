@@ -42,7 +42,7 @@ exports.createEnrollment = async (req, res) => {
   }
 };
 
-// GET ALL ENROLLMENTS (admin use — returns everything with student + course info)
+// GET ALL ENROLLMENTS (admin) or filtered by ?student_id=&status=
 exports.getEnrollments = async (req, res) => {
   try {
     const { student_id, status } = req.query;
@@ -57,18 +57,10 @@ exports.getEnrollments = async (req, res) => {
       `)
       .order("created_at", { ascending: false });
 
-    // Filter by student if student_id is provided
-    if (student_id) {
-      query = query.eq("student_id", student_id);
-    }
-
-    // Filter by status if provided
-    if (status) {
-      query = query.eq("status", status);
-    }
+    if (student_id) query = query.eq("student_id", student_id);
+    if (status)     query = query.eq("status", status);
 
     const { data, error } = await query;
-
     if (error) return res.status(500).json({ error: error.message });
 
     res.json({ enrollments: data });
@@ -77,7 +69,31 @@ exports.getEnrollments = async (req, res) => {
   }
 };
 
-// APPROVE OR REJECT ENROLLMENT (admin only)
+// GET SINGLE ENROLLMENT BY ID  ← NEW — used by course player to verify access
+exports.getEnrollmentById = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from("enrollments")
+      .select(`
+        id, status, payment_status, approved_at, created_at,
+        student_id, course_id,
+        students(id, name, email),
+        courses(id, title, description)
+      `)
+      .eq("id", id)
+      .single();
+
+    if (error) return res.status(404).json({ error: "Enrollment not found" });
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// APPROVE OR REJECT ENROLLMENT (admin)
 exports.updateEnrollmentStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -87,17 +103,13 @@ exports.updateEnrollmentStatus = async (req, res) => {
       return res.status(400).json({ error: "Status must be 'approved' or 'rejected'" });
     }
 
-    const updateData = {
-      status,
-      admin_notes: admin_notes || null
-    };
+    const updateData = { status, admin_notes: admin_notes || null };
 
     if (status === "approved") {
-      updateData.approved_at = new Date().toISOString();
-      updateData.approved_by = "admin";
+      updateData.approved_at   = new Date().toISOString();
+      updateData.approved_by   = "admin";
       updateData.payment_status = "approved";
     }
-
     if (status === "rejected") {
       updateData.payment_status = "rejected";
     }
@@ -113,9 +125,7 @@ exports.updateEnrollmentStatus = async (req, res) => {
       `);
 
     if (error) return res.status(500).json({ error: error.message });
-    if (!data || data.length === 0) {
-      return res.status(404).json({ error: "Enrollment not found" });
-    }
+    if (!data || data.length === 0) return res.status(404).json({ error: "Enrollment not found" });
 
     res.json({ message: `Enrollment ${status}`, enrollment: data[0] });
   } catch (err) {
@@ -123,7 +133,7 @@ exports.updateEnrollmentStatus = async (req, res) => {
   }
 };
 
-// UPDATE PAYMENT STATUS (kept for backward compatibility)
+// UPDATE PAYMENT STATUS (backward compat)
 exports.updatePaymentStatus = async (req, res) => {
   try {
     const { id } = req.params;
@@ -131,13 +141,11 @@ exports.updatePaymentStatus = async (req, res) => {
 
     const updateData = { payment_status };
 
-    // If payment approved, also approve enrollment
     if (payment_status === "approved") {
-      updateData.status = "approved";
-      updateData.approved_at = new Date().toISOString();
-      updateData.approved_by = "admin";
+      updateData.status       = "approved";
+      updateData.approved_at  = new Date().toISOString();
+      updateData.approved_by  = "admin";
     }
-
     if (payment_status === "rejected") {
       updateData.status = "rejected";
     }
@@ -160,7 +168,6 @@ exports.generateCertificate = async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Only generate for approved enrollments
     const { data: enrollment } = await supabase
       .from("enrollments")
       .select("status")

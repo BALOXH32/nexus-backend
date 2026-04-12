@@ -1,18 +1,23 @@
 const express = require("express");
 const router = express.Router();
 
-const courseController = require("../controllers/courseController");
-const courseContentController = require("../controllers/courseContentController");
+const {
+  getCourses,
+  getCourseById,
+  getCourseLessons,
+  createCourse
+} = require("../controllers/courseController");
 
-router.get("/", courseController.getCourses);
-router.post("/", courseController.createCourse);
+// GET all courses
+router.get("/", getCourses);
 
-// Course curriculum (modules + lessons)
-router.get("/:courseId/curriculum", courseContentController.getCurriculum);
+// GET single course by ID  ← NEW
+router.get("/:id", getCourseById);
 
-// Module management (admin only)
-router.post("/:courseId/modules", courseContentController.addModule);
-router.put("/modules/:moduleId", courseContentController.updateModule);
-router.delete("/modules/:moduleId", courseContentController.deleteModule);
+// GET lessons for a course  ← NEW
+router.get("/:id/lessons", getCourseLessons);
+
+// CREATE course
+router.post("/", createCourse);
 
 module.exports = router;

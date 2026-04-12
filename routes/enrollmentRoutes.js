@@ -4,23 +4,26 @@ const router = express.Router();
 const {
   createEnrollment,
   getEnrollments,
+  getEnrollmentById,
   updateEnrollmentStatus,
   updatePaymentStatus,
   generateCertificate,
   verifyCertificate
 } = require("../controllers/enrollmentController");
 
-// GET all enrollments (admin) OR filtered by ?student_id=xxx&status=approved (student dashboard)
+// GET all enrollments (admin) or ?student_id=&status= filter
 router.get("/", getEnrollments);
+
+// GET single enrollment by ID — used by course player  ← NEW
+router.get("/:id", getEnrollmentById);
 
 // CREATE enrollment
 router.post("/", createEnrollment);
 
-// APPROVE or REJECT enrollment (admin)
-// PATCH /api/enrollments/:id/status  body: { status: "approved" | "rejected", admin_notes: "..." }
+// APPROVE / REJECT enrollment (admin)
 router.patch("/:id/status", updateEnrollmentStatus);
 
-// UPDATE payment status (kept for backward compatibility)
+// UPDATE payment status (backward compat)
 router.patch("/:id/payment", updatePaymentStatus);
 
 // GENERATE certificate
